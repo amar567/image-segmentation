@@ -1,0 +1,52 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage[paperheight=60in,paperwidth=30in]{geometry}
+ \geometry{
+%  a4paper,
+ total={170mm,257mm},
+ left=3mm,
+ right=3mm,
+ top=3mm,
+ bottom=3mm,
+ }
+\usepackage{rotating}
+\usepackage{adjustbox}
+
+\begin{document}
+
+    \vspace*{6mm}
+    \fontsize{14}{16}\selectfont % Sets font size to 14pt with 16pt line spacing
+    \centerline{\textbf{NBEATSModel}}
+    \normalsize % Resets to the base font size
+    \bigskip \bigskip
+    \def\arraystretch{0.2} % Adjust row spacing if needed
+    \fontsize{12}{12}
+
+    \begin{tabular}{ @{}c@{\hspace{0pt}}ccccccc }
+        \multicolumn{1}{c}{} &
+            \textbf{Thresholds} &
+            \textbf{PSNR-vs-Level} &
+            \textbf{Level 2} &
+            \textbf{Level 4} &
+            \textbf{Level 6} &
+            \textbf{Level 8} &
+            \textbf{Level 10} \\
+        \adjustbox{valign=c}{\rotatebox[origin=c]{90}{\textbf{Sanjuan Dengue}}} &
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}\\
+        \adjustbox{valign=c}{\rotatebox[origin=c]{90}{\textbf{China Hepatitis B}}} &
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}&
+            \adjustbox{valign=c}{\includegraphics[width=0.13\columnwidth]{./test_results/baboon_mean.pdf}}\\
+    \end{tabular}
+
+\end{document}

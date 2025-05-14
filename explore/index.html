@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Segmentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
+    <style>
+        canvas {
+            border: 1px solid #000;
+            image-rendering: pixelated;
+        }
+
+        #toggle-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .slider-container {
+            position: relative;
+            width: 300px;
+        }
+
+        .slider-container input[type="range"] {
+            position: absolute;
+            pointer-events: none;
+            /* So both sliders can be dragged */
+            width: 100%;
+            height: 8px;
+            margin: 0;
+            -webkit-appearance: none;
+            border: 1px solid;
+        }
+
+        .slider-container input::-webkit-slider-thumb {
+            pointer-events: all;
+            /* Re-enable for thumbs */
+            position: relative;
+            z-index: 1;
+        }
+
+        .plot {
+            width: 100%;
+        }
+
+        .plotContainer {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #myCanvas {
+            object-fit: fill;
+            max-width: 100vw;
+            min-width: 90vw;
+            /* Ensures canvas fills the container */
+            /* Takes up the full width of its parent */
+            /* Takes up the full height of its parent */
+            /* transform: scale(); */
+        }
+
+
+        @media only screen and (min-width: 800px) {
+            .plot {
+                width: 50%;
+                display: flex;
+                justify-content: center;
+            }
+
+            .plotContainer {
+                width: 100%;
+                display: flex;
+                flex-direction: row;
+            }
+
+            #myCanvas {
+                object-fit: fill;
+                /* Ensures canvas fills the container */
+                width: 60%;
+                max-width: 100%;
+                min-width: 60%;
+                /* Takes up the full width of its parent */
+                /* Takes up the full height of its parent */
+                /* transform: scale(); */
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex;align-items: center;flex-direction: column;">
+    <!-- <img src="../testimages/lena.tiff" alt="" srcset=""> -->
+    <div class="plotContainer">
+        <div class="plot">
+            <canvas id="myCanvas"></canvas>
+        </div>
+        <div class="plot">
+            <canvas id="histogram" width="600" height="400"></canvas>
+        </div>
+    </div>
+
+    <br>
+    <div style="display: flex;flex-direction: column;align-items: center;width: 100%;">
+        <!-- <button id="toggle-btn">Toggle</button>
+        <p>Color: <span id="state-text">false</span></p> -->
+
+        <div class="slider-container">
+            <input type="range" id="min" min="0" max="255" value="0">
+            <input type="range" id="max" min="0" max="255" value="255">
+        </div>
+        <br>
+        <p>Range: <span id="output">0 – 255</span></p>
+
+        <br>
+        <label for="mySelect">Choose an item:</label>
+        <select id="mySelect"></select>
+        <p>Select image: <span id="output"></span></p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // console.log(GeoTIFF);
+        function reshape(array, rows, cols) {
+            if (array.length !== rows * cols) {
+                throw new Error("Total elements do not match target shape");
+            }
+
+            const reshaped = [];
+            for (let i = 0; i < rows; i++) {
+                reshaped.push(array.slice(i * cols, (i + 1) * cols));
+            }
+            return reshaped;
+        }
+
+        function toGray(a) {
+            b = [0.114020904255103, 0.587043074451121, 0.298936021293775]
+            if (a.length !== b.length) {
+                throw new Error("Arrays must have the same length");
+            }
+            const newArray = a.map((val, i) => val * b[i]);
+
+            return Math.round(newArray[0] + newArray[1] + newArray[2])
+        }
+
+        function useReactiveVar(initialValue, onChange) {
+            let value = initialValue;
+
+            function get() {
+                return value;
+            }
+
+            function set(newValue, color, rgbArray, range) {
+                if (value !== newValue) {
+                    value = newValue;
+                    onChange(color, rgbArray, range);
+                }
+            }
+
+            return [get, set];
+        }
+
+        
+        function initialize(selectedValue) {
+            
+            let url = "../testimages/"+selectedValue
+            GeoTIFF.fromUrl(url)
+                .then(async tiff => {
+                    const image = await tiff.getImage(); // by default, the first image is read.
+                    const [red, green, blue] = await image.readRasters();
+                    const { width, height } = await image.readRasters();
+
+                    let imgArr = []
+                    red.map((element, index) => {
+                        // console.log([element,green[index],blue[index]])
+                        imgArr.push([element, green[index], blue[index]])
+                    })
+                    imgArr = reshape(imgArr, height, width)
+                    const grayArr = imgArr.map(
+                        (row) => {
+                            const newRow = row.map(
+                                (pixel) => {
+                                    const gray = toGray(pixel);
+                                    return ([gray, gray, gray])
+                                }
+                            )
+                            return newRow
+                        }
+                    )
+
+                    const initialRange = [0, 255]
+
+
+                    const n = imgArr.length;
+                    const m = imgArr[0].length;
+
+                    const canvas = document.getElementById('myCanvas');
+                    canvas.width = m;
+                    canvas.height = n;
+
+                    const ctx = canvas.getContext('2d');
+                    const imageData = ctx.createImageData(m, n);
+                    const data = imageData.data;
+
+                    function plot(color, rgbArray, range) {
+                        if (color) {
+                            // Fill pixel data RGB
+                            for (let y = 0; y < n; y++) {
+                                for (let x = 0; x < m; x++) {
+                                    const [r, g, b] = rgbArray[y][x];
+                                    const index = (y * m + x) * 4;
+                                    data[index] = r;
+                                    data[index + 1] = g;
+                                    data[index + 2] = b;
+                                    data[index + 3] = 255; // fully opaque
+                                }
+                            }
+                        } else {
+                            for (let y = 0; y < height; y++) {
+                                for (let x = 0; x < width; x++) {
+                                    const i = (y * width + x) * 4;
+                                    const [r, g, b] = rgbArray[y][x];
+                                    let gray = r; // assumed 0–255
+                                    if (gray < range[0]) {
+                                        gray = 0
+                                    }
+                                    if (gray > range[1]) {
+                                        gray = 0
+                                    }
+                                    data[i] = gray;
+                                    data[i + 1] = gray;
+                                    data[i + 2] = gray; // R, G, B
+                                    data[i + 3] = 255; // alpha
+                                }
+                            }
+                        }
+                        // Fill the pixel data Grayscale
+                        ctx.putImageData(imageData, 0, 0);
+                    }
+                    // plot(false, imgArr, initialRange)
+                    plot(false, grayArr, initialRange)
+
+                    // dynamic data
+                    const [color, setColor] = useReactiveVar(false, plot);
+                    const [rgbArray, setRGBarray] = useReactiveVar(grayArr, plot);
+                    const [range, setRange] = useReactiveVar(initialRange, plot)
+
+                    // control buttons 
+
+                    // const button = document.getElementById("toggle-btn");
+                    // const display = document.getElementById("state-text");
+
+                    // button.addEventListener("click", () => {
+                    //     setColor(!color(), !color(), rgbArray(), range());
+                    //     if (color()) {
+                    //         setRGBarray(imgArr, color(), imgArr, range());
+                    //     } else {
+                    //         setRGBarray(grayArr, color(), grayArr, range());
+                    //     }
+                    //     display.textContent = color();
+                    //     // console.log("Variable is now:", color());
+                    // });
+
+                    const minSlider = document.getElementById('min');
+                    const maxSlider = document.getElementById('max');
+                    const output = document.getElementById('output');
+
+                    function update() {
+                        let minVal = parseInt(minSlider.value);
+                        let maxVal = parseInt(maxSlider.value);
+
+                        if (minVal > maxVal) {
+                            [minVal, maxVal] = [maxVal, minVal];
+                        }
+                        setRange([minVal, maxVal], color(), rgbArray(), [minVal, maxVal])
+                        output.textContent = `${minVal} - ${maxVal}`;
+                    }
+
+                    minSlider.addEventListener('input', update);
+                    maxSlider.addEventListener('input', update);
+
+                    // ----------------------- plotting histogram
+
+                    // Example grayscale array (you can generate this programmatically)
+                    const dataArray = imgArr.map(
+                        (row) => {
+                            const newRow = row.map(
+                                (pixel) => {
+                                    const gray = toGray(pixel);
+                                    return gray
+                                }
+                            )
+                            return newRow
+                        }
+                    ).flat(10)
+
+                    const bins = new Array(256).fill(0);
+                    dataArray.forEach(val => bins[val]++);
+
+                    const ctx2 = document.getElementById('histogram').getContext('2d');
+
+                    const chart = new Chart(ctx2, {
+                        type: 'bar',
+                        data: {
+                            labels: bins.map((_, i) => i),
+                            datasets: [{
+                                label: 'Histogram',
+                                data: bins,
+                                backgroundColor: bins.map((_, i) => inActiveRange(i, 0, 255) ? 'red' : '#0000001f'),
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                x: { title: { display: true, text: 'Intensity (0-255)' } },
+                                y: { title: { display: true, text: 'Frequency' } }
+                            }
+                        }
+                    });
+
+                    function inActiveRange(x, min, max) {
+                        return x >= min && x <= max;
+                    }
+
+                    function updateChart() {
+                        let minVal = parseInt(minSlider.value);
+                        let maxVal = parseInt(maxSlider.value);
+
+                        if (minVal > maxVal) [minVal, maxVal] = [maxVal, minVal];
+
+                        chart.data.datasets[0].backgroundColor = bins.map((_, i) =>
+                            inActiveRange(i, minVal, maxVal) ? 'red' : '#0000001f'
+                        );
+
+                        chart.update();
+                    }
+
+
+                    minSlider.addEventListener('input', updateChart);
+                    maxSlider.addEventListener('input', updateChart);
+
+                });
+
+
+        }
+
+
+        // Your array
+        const options = ["aerial.tiff", "baboon.tiff", "boat.tiff", "house.tiff", "jet.tiff", "lena.tiff", "moon.tiff", "peppers.tiff"];
+
+        // Default selection
+        const defaultValue = "house.tiff";
+
+        const select = document.getElementById("mySelect");
+        const output = document.getElementById("output");
+
+        // Populate dropdown
+        options.forEach(opt => {
+            const option = document.createElement("option");
+            option.value = opt;
+            option.textContent = opt;
+            if (opt === defaultValue) option.selected = true;
+            select.appendChild(option);
+        });
+
+        // Initial output
+        output.textContent = select.value;
+
+        // On change handler
+        select.addEventListener("change", () => {
+            const selected = select.value;
+            output.textContent = selected;
+
+            // 👉 Trigger your function here
+            initialize(selected);
+        });
+
+        initialize(defaultValue);
+
+    </script>
+</body>
+
+</html>
