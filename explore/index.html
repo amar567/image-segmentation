@@ -120,6 +120,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+
+        let chart = null; // Global reference to Chart.js chart
+
+
         // console.log(GeoTIFF);
         function reshape(array, rows, cols) {
             if (array.length !== rows * cols) {
@@ -160,10 +164,12 @@
             return [get, set];
         }
 
-        
+
         function initialize(selectedValue) {
-            
-            let url = "../testimages/"+selectedValue
+            if (chart) {
+                chart.destroy(); // Destroy old chart instance if it exists
+            }
+            let url = "../testimages/" + selectedValue
             GeoTIFF.fromUrl(url)
                 .then(async tiff => {
                     const image = await tiff.getImage(); // by default, the first image is read.
@@ -299,7 +305,7 @@
 
                     const ctx2 = document.getElementById('histogram').getContext('2d');
 
-                    const chart = new Chart(ctx2, {
+                    chart = new Chart(ctx2, {
                         type: 'bar',
                         data: {
                             labels: bins.map((_, i) => i),
