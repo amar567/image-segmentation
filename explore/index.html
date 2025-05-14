@@ -173,26 +173,45 @@
             GeoTIFF.fromUrl(url)
                 .then(async tiff => {
                     const image = await tiff.getImage(); // by default, the first image is read.
-                    const [red, green, blue] = await image.readRasters();
-                    const { width, height } = await image.readRasters();
-
+                    info = await image.readRasters()
+                    const [width, height] = [info.width, info.height];
+                    let [red, green, blue] = [[],[],[]]
+                    let gray = []
+                    let grayArr = []
                     let imgArr = []
-                    red.map((element, index) => {
-                        // console.log([element,green[index],blue[index]])
-                        imgArr.push([element, green[index], blue[index]])
-                    })
-                    imgArr = reshape(imgArr, height, width)
-                    const grayArr = imgArr.map(
-                        (row) => {
-                            const newRow = row.map(
-                                (pixel) => {
-                                    const gray = toGray(pixel);
-                                    return ([gray, gray, gray])
-                                }
-                            )
-                            return newRow
-                        }
-                    )
+                    if (info.length === 3) {
+                        
+                        [red, green, blue] = info;
+                        imgArr = []
+                        red.map((element, index) => {
+                            // console.log([element,green[index],blue[index]])
+                            imgArr.push([element, green[index], blue[index]])
+                        })
+                        imgArr = reshape(imgArr, height, width)
+                        grayArr = imgArr.map(
+                            (row) => {
+                                const newRow = row.map(
+                                    (pixel) => {
+                                        const gray = toGray(pixel);
+                                        return ([gray, gray, gray])
+                                    }
+                                )
+                                return newRow
+                            }
+                        )
+                    } else {
+                        
+                        gray = info[0];
+                        
+                        [red, green, blue] = [gray, gray, gray];
+                        console.log([red, green, blue]);
+                        red.map((element, index) => {
+                            // console.log([element,green[index],blue[index]])
+                            imgArr.push([element, green[index], blue[index]])
+                        })
+                        imgArr = reshape(imgArr, height, width)
+                        grayArr = imgArr
+                    }
 
                     const initialRange = [0, 255]
 
