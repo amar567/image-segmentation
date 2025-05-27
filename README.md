@@ -17,7 +17,7 @@
 [[PATREC_4248.pdf#page=4&selection=16,42,28,5|PATREC_4248, page 4]]
 
 > 
-
+[[PATREC_4248.pdf#page=4&selection=218,0,218,9|PATREC_4248, page 4]]
 ## Comparing Mean vs mode using
 
 - PSNR

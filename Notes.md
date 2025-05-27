@@ -1,0 +1,2 @@
+- The quality of PSNR depends on the thresholding cutoffs but also on the value we assign to each segment 
+- 
